@@ -54,15 +54,19 @@ class RAGService:
         return answer
 
     async def query(self, query: str, top_k=5):
-        # 1. 检索相关文档
+        from app.services.query_optimizer import recognize_intent
+        # 1. 意图识别
+        intent = recognize_intent(query)
+        # 2. 检索相关文档
         retrieved_docs = self.retrieve(query, top_k=top_k)
 
-        # 2. 生成答案
+        # 3. 生成答案（可将intent传递给prompt构建模块，后续可扩展动态prompt）
         answer = await self.generate_answer(query, retrieved_docs)
 
         return {
             "answer": answer,
-            "retrieved_docs": retrieved_docs
+            "retrieved_docs": retrieved_docs,
+            "intent": intent.value
         }
 
 
