@@ -8,7 +8,7 @@ on:
 
 env:
   # 云端Milvus配置（通过Secrets注入）
-  MILVUS_CLOUD_URI: ${{ secrets.MILVUS_URL}}  # 格式: https://xxx.api.milvus.cloud
+  MILVUS_CLOUD_URI: ${{ secrets.MILVUS_URL}}
   MILVUS_CLOUD_TOKEN: ${{ secrets.MILVUS_TOKEN }}
 
 jobs:
@@ -16,18 +16,16 @@ jobs:
     runs-on: [self-hosted, nju]
 
     steps:
-    - name: Checkout code
+    - name: Checkout code via ssh
       uses: actions/checkout@v4
+      with:
+        repository: 'git@github.com:seiii-chy/RAG-java.git'
+        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
-
-    - name: Set up a Redis server
-      run: |
-        docker run -d --name redis-server -p 6379:6379 redis:latest
-        sleep 5
 
     - name: Create .env file
       run: |
