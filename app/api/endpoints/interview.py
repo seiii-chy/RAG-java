@@ -24,12 +24,13 @@ def start_interview():
         "user_id": 123,
         "position": "高级开发工程师",
         "provider": "hunyuan"
+        "interview_name": "我的第一次模拟面试“
     }
     """
     try:
         data = request.get_json()
         # 参数验证
-        required_fields = ['user_id', 'position']
+        required_fields = ['user_id', 'position',"interview_name","cv"]
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing required fields"}), HTTPStatus.BAD_REQUEST
 
@@ -39,7 +40,9 @@ def start_interview():
             db_session=session,
             user_id=data['user_id'],
             position=data['position'],
-            provider=data.get('provider', 'hunyuan')
+            provider=data.get('provider', 'hunyuan'),
+            interview_name = data["interview_name"],
+            cv = data['cv']
         )
 
         # 生成第一个问题
@@ -230,6 +233,7 @@ def get_interview(interview_id):
             "interview_id": interview.id,
             "user_id": interview.user_id,
             "position": interview.position,
+            "interview_name": interview.name,
             "started_at": interview.started_at.isoformat(),
             "ended_at": interview.ended_at.isoformat() if interview.ended_at else None,
         }), HTTPStatus.OK

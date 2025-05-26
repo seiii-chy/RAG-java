@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Dict,   Optional
 from zoneinfo import ZoneInfo
 from langchain_openai import ChatOpenAI
-from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferMemory
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -26,7 +25,7 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 
 
 class InterviewSession:
-    def __init__(self, db_session,user_id: int,provider: str = "deepseek", position: str = "高级开发工程师",first: bool = True):
+    def __init__(self, db_session,user_id: int,provider: str = "deepseek", position: str = "高级开发工程师",first: bool = True,interview_name:str = "模拟面试",cv:str = "java工程师应聘"):
         self._history_store = {}
         self.db = db_session
         self.position = position
@@ -34,12 +33,15 @@ class InterviewSession:
         self.provider = provider
         self.llm = self._get_llm_by_provider(provider)
         self.redis = current_app.extensions['redis']
+        self.interview_name = interview_name
+        self.cv = cv
 
         #创造面试主记录
         self.interview = Interview(
             user_id=user_id,
             position=position,
             llm_provider=provider,
+            interview_name = interview_name,
             started_at=datetime.now(ZoneInfo('Asia/Shanghai'))
         )
         if(first):
@@ -53,6 +55,7 @@ class InterviewSession:
         self.session_id = f"interview_{self.interview.id}"
         self.runnable = self._build_chain()
 
+
     def _build_chain(self):
         # 定义动态系统消息
         def dynamic_prompt(session_data: Dict):
@@ -63,10 +66,11 @@ class InterviewSession:
                         f'''你正在面试{self.position}职位的候选人，当前阶段：{self._get_current_stage()}
                             请：
                             1. 生成专业评价（限100字），尽可能的亲和、关注被面试者的状态
-                            2. 提出下一个问题
+                            2. 根据历史提问和候选人简历提出下一个问题
                             3. 判断是否需要追问
                             4. 如果问题数目到了15个，请结束这次面试，并且给予被面试者一个总结性的评价
                             5. 以下会有你的历史对话记录，请根据上下文进行回答
+                            6. 请勿针对一个点提问过多次数，当针对一个方向的问题达到三个时请更换方向提问
         
                             返回JSON格式：
                             {{{{"evaluation": "...","next_question": "...","need_followup": bool,"need_end": bool}}}}'''
@@ -101,12 +105,15 @@ class InterviewSession:
         """获取当前会话的历史记录"""
 
         if session_id not in self._history_store:
-            # 如果是第一个问题，添加系统提示到历史
+            # 如果是第一个问题，添加系统提示到历史,并且添加cv的提问记录
             self._history_store[session_id] = ChatMessageHistory()
+            self._history_store[session_id].add_ai_message("可以提供一下您的简历吗？")
+            self._history_store[session_id].add_user_message(self.cv)
             if len(self._history_store[session_id].messages) == 0:
                 self._history_store[session_id].add_ai_message(
                     f"开始{self.position}职位面试，当前阶段：{self._get_current_stage()}"
                 )
+
 
         return self._history_store[session_id]
 
@@ -233,30 +240,6 @@ class InterviewSession:
             # 默认使用OpenAI
             return ChatOpenAI(temperature=0.7)
 
-
-
-    def _create_prompt_template(self) -> str:
-        """创建标准化的提示模板"""
-        return """
-            作为{position}职位的面试官，当前阶段：{stage}
-            历史对话：{history}
-            最新回答：{input}
-
-            请：
-            1. 生成专业评价（限100字），尽可能的亲和、关注被面试者的状态
-            2. 提出下一个问题
-            3. 判断是否需要追问
-            4. 如果问题数目到了15个，请结束这次面试，并且给予被面试者一个总结性的评价
-            5. 一个主题的问题不要追问太多，并且请结合用户的简历进行提问
-
-            返回JSON格式：
-            {{
-                "evaluation": "...",
-                "next_question": "...",
-                "need_followup": bool,
-                "need_end": bool
-            }}
-            """
 
 
     async def generate_question(self, answer: Optional[str] =None) -> Dict:

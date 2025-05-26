@@ -15,3 +15,4 @@ class Interview(db.Model):
     final_score = Column(db.Integer)
     feedback = Column(db.String(1000))
     llm_provider = Column(db.String(50))  # 使用的LLM提供商
+    interview_name = Column(db.String(2500))
