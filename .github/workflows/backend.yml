@@ -19,7 +19,7 @@ jobs:
     - name: Checkout code via ssh
       uses: actions/checkout@v4
       with:
-        repository: ${{secrets.SSH_REPOSITORY}}
+        repository: seiii-chy/RAG-java
         ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Set up Python 3.10
