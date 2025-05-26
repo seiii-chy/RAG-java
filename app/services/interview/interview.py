@@ -75,7 +75,7 @@ class InterviewSession:
                             以下是几个提问示例：
                             “说一下Java的特点” ，“与传统的JDBC相比，MyBatis的优点？”，“介绍一下TCP三次握手的流程”
                             “你在简历里提到xxx（技术点），可以介绍一下关于xxx的ccc吗”
-                            
+                            请尽可能的模拟一个面试官的语气，在next_question字段中适当的带上对上个回答的评价与过渡语句
                             返回JSON格式：
                             {{{{"evaluation": "...","next_question": "...","need_followup": bool,"need_end": bool}}}}'''
                     ),
