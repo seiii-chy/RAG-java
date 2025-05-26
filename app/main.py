@@ -37,7 +37,7 @@ def create_app():
     app.register_blueprint(interview.interview_bp)
     app.register_blueprint(knowledge_base.bp)
     milvus_client.connect(app)
-    neo4j_client.connect(app)
+    # neo4j_client.connect(app)
     CORS(app, supports_credentials=True)
     return app
 

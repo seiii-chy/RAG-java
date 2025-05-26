@@ -3,10 +3,13 @@ from http import HTTPStatus
 
 from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models.Interview_question import InterviewQuestion
+from app.models.answer import Answer
 from app.models.interview import Interview
+from app.models.question import Question
 from app.services.interview.interview import InterviewSession
 
 interview_bp = Blueprint('interview', __name__, url_prefix='/interviews')
@@ -21,12 +24,13 @@ def start_interview():
         "user_id": 123,
         "position": "高级开发工程师",
         "provider": "hunyuan"
+        "interview_name": "我的第一次模拟面试“
     }
     """
     try:
         data = request.get_json()
         # 参数验证
-        required_fields = ['user_id', 'position']
+        required_fields = ['user_id', 'position',"interview_name","cv"]
         if not all(field in data for field in required_fields):
             return jsonify({"error": "Missing required fields"}), HTTPStatus.BAD_REQUEST
 
@@ -36,7 +40,9 @@ def start_interview():
             db_session=session,
             user_id=data['user_id'],
             position=data['position'],
-            provider=data.get('provider', 'hunyuan')
+            provider=data.get('provider', 'hunyuan'),
+            interview_name = data["interview_name"],
+            cv = data['cv']
         )
 
         # 生成第一个问题
@@ -185,3 +191,84 @@ async def end_interview(interview_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
+@interview_bp.route('/<int:user_id>', methods=['GET'])
+def get_user_old_interviews(user_id):
+    """
+    获取用户的旧面试记录
+    GET /api/v1/interviews/123
+    """
+    try:
+        interview = db.session.query(Interview).filter_by(user_id=user_id).all()
+        if not interview:
+            return jsonify({"error": "Interview not found"}), HTTPStatus.NOT_FOUND
+
+        # 获取面试信息
+        interview_list = []
+        for interview in interview:
+            interview_list.append({
+                "interview_id": interview.id,
+                "user_id": interview.user_id,
+                "position": interview.position,
+                "started_at": interview.started_at.isoformat(),
+                "ended_at": interview.ended_at.isoformat() if interview.ended_at else None
+            })
+        return jsonify(interview_list), HTTPStatus.OK
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+@interview_bp.route('/single/<int:interview_id>', methods=['GET'])
+def get_interview(interview_id):
+    """
+    获取面试记录
+    GET /api/v1/interviews/123
+    """
+    try:
+        interview = db.session.get(Interview, interview_id)
+        if not interview:
+            return jsonify({"error": "Interview not found"}), HTTPStatus.NOT_FOUND
+
+
+        return jsonify({
+            "interview_id": interview.id,
+            "user_id": interview.user_id,
+            "position": interview.position,
+            "interview_name": interview.name,
+            "started_at": interview.started_at.isoformat(),
+            "ended_at": interview.ended_at.isoformat() if interview.ended_at else None,
+        }), HTTPStatus.OK
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+
+@interview_bp.route('/<int:interview_id>/questions', methods=['GET'])
+def get_interview_questions(interview_id):
+    """
+    获取面试问题列表
+    GET /api/v1/interviews/123/questions
+    """
+    try:
+        #在全连接的interview_question和question表中查询
+        questions = (
+            db.session.query(InterviewQuestion,Question, Answer)
+            .join(Question, InterviewQuestion.question_id == Question.id)
+            .join(Answer, InterviewQuestion.id == Answer.interview_question_id) # 自动基于 InterviewQuestion.id == Answer.interview_question_id 连接
+            .all()
+        )
+        print(questions)
+        question_list = []
+        for interview_q, question, answer in questions:
+            question_list.append({
+                "interview_question_id": interview_q.id,
+                "question_id": question.id,
+                "question_text": question.text,
+                "answer_text": answer.text if answer else None,
+                "evaluation": interview_q.evaluation,
+                "stage": interview_q.stage,
+            })
+
+        return jsonify(question_list), HTTPStatus.OK
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), HTTPStatus.INTERNAL_SERVER_ERROR
