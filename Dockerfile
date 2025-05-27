@@ -15,6 +15,8 @@ RUN apt-get update && \
         pkg-config \
         libmariadb-dev \
         libmariadb-dev-compat \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
         gcc \
         python3-dev
 RUN pip install --no-cache-dir -r requirements.txt

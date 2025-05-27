@@ -116,12 +116,12 @@ jobs:
 
     - name: Cleanup old images
       run: |
-        # 保留最近3个镜像
-        if [ $(docker images -q $DOCKER_IMAGE_NAME | wc -l) -gt 3 ]; then
+        # 保留最近1个镜像
+        if [ $(docker images -q $DOCKER_IMAGE_NAME | wc -l) -gt 1 ]; then
           docker images --format "{{.ID}} {{.CreatedAt}}" $DOCKER_IMAGE_NAME \
             | sort -k2,3 -r -t ' ' \
-            | awk -v keep=3 'NR>keep {print $1}' \
+            | awk -v keep=1 'NR>keep {print $1}' \
             | xargs -r docker rmi -f
         else
-          echo "无需清理：当前镜像数量 <= 3"
+          echo "无需清理：当前镜像数量 <= 1"
         fi
