@@ -9,13 +9,15 @@ class InterviewIntent(Enum):
     PROCESS = "process"                    # 流程意图
     INTERACTIVE = "interactive"            # 交互意图
     ANALYTICAL = "analytical"              # 分析意图
+    GENERAL = "general"                    # 通用意图
 
 # 意图详细说明
 INTENT_DESCRIPTIONS = {
     InterviewIntent.TECHNICAL: "技术意图，包括代码技术、原理解释、性能优化、设计模式等。",
     InterviewIntent.PROCESS: "流程意图，包括面试步骤、时间安排、HR技巧等。",
     InterviewIntent.INTERACTIVE: "交互意图，包括追问、反馈、模拟对话。",
-    InterviewIntent.ANALYTICAL: "分析意图，包括技术对比、案例分析。"
+    InterviewIntent.ANALYTICAL: "分析意图，包括技术对比、案例分析。",
+    InterviewIntent.GENERAL: "通用意图，适用于无法明确分类的情况。"
 }
 
 # 意图分类服务
@@ -44,7 +46,7 @@ class IntentClassificationService:
         }
         
         # 计算匹配分数
-        best_intent = InterviewIntent.TECHNICAL  # 默认意图
+        best_intent = InterviewIntent.GENERAL  # 默认意图
         best_score = 0
         
         for intent, keywords in intent_keywords.items():

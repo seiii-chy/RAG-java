@@ -1,5 +1,4 @@
 import asyncio
-import os
 
 from openai import AsyncOpenAI, OpenAI
 
@@ -8,45 +7,42 @@ from app.services.llm import LLMService
 from langsmith.wrappers import wrap_openai
 from langsmith import traceable
 
+from app.services.intent_classifier import IntentClassificationService
+from app.services.prompt.factory import get_prompt_template
+
 API_URL = 'https://api.deepseek.com/v1'
+
 
 class DeepseekService(LLMService):
     def __init__(self):
         self.api_key = Settings.DEEPSEEK_API_KEY
-        self.client = wrap_openai(AsyncOpenAI(api_key=self.api_key,base_url=API_URL))
+        self.client = wrap_openai(AsyncOpenAI(api_key=self.api_key, base_url=API_URL))
 
     def generate(self, prompt: str, **kwargs) -> str:
         # 同步方法调用异步方法
         return asyncio.run(self.agenerate(prompt, **kwargs))
 
-    def get_prompt(self,query:str,**kwargs):
+    async def get_prompt(self, query: str, **kwargs):
+        # 获取检索文档
         retrieved_docs = kwargs.get('retrieved_docs')
-        prompt = query
-        if retrieved_docs:
-            context = "\n".join([doc["content"] for doc in retrieved_docs])
-            # 关于prompt的处理
-            # TODO: 根据实际需求调整prompt的格式
-            # blame: HMY 注意这里代码格式的设计，要在几个工厂方法中都完成这样的选择设计
-            prompt = f"""
-            根据以下检索文档回答问题：
-            检索文档：
-            {context}
+        context = "\n".join([doc["content"] for doc in retrieved_docs]) if retrieved_docs else None
 
-            问题：
-            {query}
+        # 获取意图分类结果
+        intent_classifier = IntentClassificationService()
+        intent = await intent_classifier.classify_intent(query)
 
-            回答：
-            """
-        return prompt
-
+        # 根据意图类型获取对应的prompt模板并生成prompt
+        prompt_template = get_prompt_template(intent.value)
+        generated_prompt = prompt_template.generate(query, context if context else "")
+        return str(generated_prompt)
 
     @traceable
     async def agenerate(self, prompt: str, **kwargs) -> str:
         print("---------llm is generating response--------")
         # 关于prompt的处理
-        prompt = self.get_prompt(query=prompt,**kwargs)
+        prompt = await self.get_prompt(query=prompt, **kwargs)
         response = await self.client.chat.completions.create(
-            model = 'deepseek-chat',
+            model='deepseek-chat',
             messages=[{
                 "role": "user",
                 "content": prompt
@@ -55,16 +51,16 @@ class DeepseekService(LLMService):
         )
         return response.choices[0].message.content
 
-    def stream_generate(self, prompt: str, **kwargs):
+    async def stream_generate(self, prompt: str, **kwargs):
         """
         流式生成响应，逐步返回每个 token。
         :param prompt: 用户输入的提示
         :param kwargs: 其他参数（如 temperature）
         """
         print("---------llm is streaming response--------")
-        client = wrap_openai(OpenAI(base_url=API_URL,api_key=self.api_key))
+        client = wrap_openai(OpenAI(base_url=API_URL, api_key=self.api_key))
         # 关于prompt的处理
-        prompt = self.get_prompt(query=prompt,**kwargs)
+        prompt = await self.get_prompt(query=prompt, **kwargs)
         stream = client.chat.completions.create(
             model='deepseek-chat',
             messages=[{"role": "user", "content": prompt}],

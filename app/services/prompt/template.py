@@ -5,5 +5,5 @@ class PromptTemplate:
     def format(self, **kwargs) -> str:
         return self.template.format(**kwargs)
 
-    def generate(self,prompt: str) -> str:
-        return prompt
+    def generate(self, query: str, context: str) -> str:
+        return query
