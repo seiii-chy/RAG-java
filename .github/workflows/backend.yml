@@ -92,6 +92,9 @@ jobs:
           -t $DOCKER_IMAGE_NAME:latest \
           --build-arg ENV_FILE=.env \
           .
+          
+          docker builder prune --all --force
+        
 
     - name: Deploy container
       run: |
