@@ -13,7 +13,8 @@ RUN pip install --upgrade pip
 RUN apt-get update && \
     apt-get install -y \
         pkg-config \
-        libmysqlclient-dev \
+        libmariadb-dev \
+        libmariadb-dev-compat \
         gcc \
         python3-dev
 RUN pip install --no-cache-dir -r requirements.txt
