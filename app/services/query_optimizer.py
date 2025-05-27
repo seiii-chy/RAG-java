@@ -9,7 +9,6 @@ class InterviewIntent(Enum):
     DEFAULT = "default"                # 默认意图，无法归类时使用
     SUMMARY = "summary"                # 总结/摘要类请求
     COMPARISON = "comparison"          # 比较/对比类请求
-    RETRIEVAL = "retrieval"            # 信息检索类请求
     CLARIFICATION = "clarification"    # 澄清/追问类请求
     SUGGESTION = "suggestion"          # 建议/优化类请求
     INTERVIEW_FLOW = "interview_flow"  # 面试流程相关
@@ -23,7 +22,6 @@ INTENT_DESCRIPTIONS = {
     InterviewIntent.DEFAULT: "默认意图，未能明确分类的请求。",
     InterviewIntent.SUMMARY: "用户请求对内容进行总结或生成摘要。",
     InterviewIntent.COMPARISON: "用户要求对两个或多个对象进行比较。",
-    InterviewIntent.RETRIEVAL: "用户希望检索某类信息或事实。",
     InterviewIntent.CLARIFICATION: "用户对先前内容提出澄清或追问。",
     InterviewIntent.SUGGESTION: "用户请求建议、优化或改进方案。",
     InterviewIntent.INTERVIEW_FLOW: "涉及面试流程、步骤、安排等相关内容。",
@@ -37,7 +35,6 @@ INTENT_DESCRIPTIONS = {
 INTENT_KEYWORDS_MODULES = {
     InterviewIntent.SUMMARY: "summary",
     InterviewIntent.COMPARISON: "comparison",
-    InterviewIntent.RETRIEVAL: "retrieval",
     InterviewIntent.CLARIFICATION: "clarification",
     InterviewIntent.SUGGESTION: "suggestion",
     InterviewIntent.INTERVIEW_FLOW: "interview_flow",
