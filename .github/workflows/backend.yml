@@ -85,21 +85,36 @@ jobs:
       run: |
         kill $(cat flask.pid)
 
+    - name: Stop Docker container
+      run: |
+          docker stop $DOCKER_CONTAINER_NAME || true
+          docker rm $DOCKER_CONTAINER_NAME || true
+
+
+    - name: Clean up old images
+      run: |
+        # 保留最近1个镜像
+        if [ $(docker images -q $DOCKER_IMAGE_NAME | wc -l) -gt 1 ]; then
+          docker images --format "{{.ID}} {{.CreatedAt}}" $DOCKER_IMAGE_NAME \
+            | sort -k2,3 -r -t ' ' \
+            | awk -v keep=1 'NR>keep {print $1}' \
+            | xargs -r docker rmi -f
+        else
+          echo "无需清理：当前镜像数量 <= 1"
+        fi
+
     - name: Build Docker image
       run: |
           docker build \
           -t $DOCKER_IMAGE_NAME:${GITHUB_SHA::8} \
-          -t $DOCKER_IMAGE_NAME:latest \
           --build-arg ENV_FILE=.env \
           .
           
-          docker builder prune --all --force
+          # docker builder prune --all --force
         
 
     - name: Deploy container
       run: |
-          docker stop $DOCKER_CONTAINER_NAME || true
-          docker rm $DOCKER_CONTAINER_NAME || true
           
           docker run -d \
             --name $DOCKER_CONTAINER_NAME \
@@ -114,14 +129,3 @@ jobs:
             # 等待容器健康检查通过
             timeout 120 bash -c 'until docker inspect --format "{{json .State.Health.Status }}" $DOCKER_CONTAINER_NAME | grep -q "healthy"; do sleep 5; done'
 
-    - name: Cleanup old images
-      run: |
-        # 保留最近1个镜像
-        if [ $(docker images -q $DOCKER_IMAGE_NAME | wc -l) -gt 1 ]; then
-          docker images --format "{{.ID}} {{.CreatedAt}}" $DOCKER_IMAGE_NAME \
-            | sort -k2,3 -r -t ' ' \
-            | awk -v keep=1 'NR>keep {print $1}' \
-            | xargs -r docker rmi -f
-        else
-          echo "无需清理：当前镜像数量 <= 1"
-        fi
