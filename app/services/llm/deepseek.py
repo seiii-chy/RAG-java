@@ -21,22 +21,73 @@ class DeepseekService(LLMService):
 
     def get_prompt(self,query:str,**kwargs):
         retrieved_docs = kwargs.get('retrieved_docs')
+        intent_type = kwargs.get('intent_type', 'general')  # 获取意图类型，默认为general
         prompt = query
+        
         if retrieved_docs:
             context = "\n".join([doc["content"] for doc in retrieved_docs])
-            # 关于prompt的处理
-            # TODO: 根据实际需求调整prompt的格式
-            # blame: HMY 注意这里代码格式的设计，要在几个工厂方法中都完成这样的选择设计
-            prompt = f"""
-            根据以下上下文回答问题：
-            上下文：
-            {context}
-
-            问题：
-            {query}
-
-            回答：
-            """
+            
+            # 根据不同意图类型使用不同的prompt模板
+            if intent_type == 'technical':
+                prompt = f"""
+                基于以下技术文档回答问题。请重点关注代码实现细节和技术原理解释：
+                
+                技术文档：
+                {context}
+                
+                技术问题：
+                {query}
+                
+                请提供详细的技术说明：
+                """
+            elif intent_type == 'process':
+                prompt = f"""
+                根据以下文档回答流程相关问题。请重点说明步骤安排和执行顺序：
+                
+                参考文档：
+                {context}
+                
+                流程问题：
+                {query}
+                
+                请按步骤详细说明：
+                """
+            elif intent_type == 'interactive':
+                prompt = f"""
+                基于以下对话上下文回答问题。请注重交互性和用户体验：
+                
+                对话记录：
+                {context}
+                
+                用户问题：
+                {query}
+                
+                请以对话形式回答：
+                """
+            elif intent_type == 'analysis':
+                prompt = f"""
+                根据以下资料进行分析。请重点进行对比和案例分析：
+                
+                分析材料：
+                {context}
+                
+                分析问题：
+                {query}
+                
+                请进行详细分析：
+                """
+            else:  # general类型或其他类型
+                prompt = f"""
+                根据以下上下文回答问题：
+                
+                上下文：
+                {context}
+                
+                问题：
+                {query}
+                
+                回答：
+                """
         return prompt
 
 
