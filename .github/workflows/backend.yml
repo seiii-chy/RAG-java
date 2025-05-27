@@ -10,6 +10,8 @@ env:
   # 云端Milvus配置（通过Secrets注入）
   MILVUS_CLOUD_URI: ${{ secrets.MILVUS_URL}}
   MILVUS_CLOUD_TOKEN: ${{ secrets.MILVUS_TOKEN }}
+  DOCKER_IMAGE_NAME: rag-java
+  DOCKER_CONTAINER_NAME: rag-java-container
 
 jobs:
   service-validation:
@@ -76,3 +78,37 @@ jobs:
     - name: Stop Flask app
       run: |
         kill $(cat flask.pid)
+
+    - name: Build Docker image
+      run: |
+          docker build \
+          -t $DOCKER_IMAGE_NAME:${GITHUB_SHA::8} \
+          -t $DOCKER_IMAGE_NAME:latest \
+          --build-arg ENV_FILE=.env \
+
+    - name: Deploy container
+      run: |
+          docker stop $DOCKER_CONTAINER_NAME || true
+          docker rm $DOCKER_CONTAINER_NAME || true
+          
+          docker run -d \
+            --name $DOCKER_CONTAINER_NAME \
+            --restart unless-stopped \
+            --health-cmd "curl --fail http://localhost:5000/health || exit 1" \
+            --health-interval 30s \
+            --health-timeout 10s \
+            --health-retries 3 \
+            -p 5000:5000 \
+            $DOCKER_IMAGE_NAME:${GITHUB_SHA::8}
+            
+            # 等待容器健康检查通过
+            timeout 120 bash -c 'until docker inspect --format "{{json .State.Health.Status }}" $DOCKER_CONTAINER_NAME | grep -q "healthy"; do sleep 5; done'
+
+    - name: Cleanup old images
+      run: |
+        # 保留最近3个镜像
+        docker images $DOCKER_IMAGE_NAME \
+        --format "{{.ID}} {{.CreatedAt}}" \  # 输出镜像ID和创建时间
+          | sort -k2 -r \                      # 按时间倒序排序
+          | awk -v keep=3 'NR>keep {print $3}' \
+          | xargs -r docker rmi -f
