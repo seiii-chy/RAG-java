@@ -53,6 +53,9 @@ jobs:
         NEO4J_URI = ${{secrets.NEO4J_URI}}
         NEO4J_USERNAME = ${{secrets.NEO4J_USERNAME}}
         NEO4J_PASSWORD = ${{secrets.NEO4J_PASSWORD}}
+        AURA_INSTANCEID = ${{secrets.AURA_INSTANCEID}}
+        AURA_INSTANCENAME = ${{secrets.AURA_INSTANCENAME}}
+        REDIS_URL = ${{secrets.REDIS_URL}}
         EOF
 
     - name: Install dependencies
@@ -85,6 +88,7 @@ jobs:
           -t $DOCKER_IMAGE_NAME:${GITHUB_SHA::8} \
           -t $DOCKER_IMAGE_NAME:latest \
           --build-arg ENV_FILE=.env \
+        .
 
     - name: Deploy container
       run: |
