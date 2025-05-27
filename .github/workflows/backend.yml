@@ -111,8 +111,7 @@ jobs:
     - name: Cleanup old images
       run: |
         # 保留最近3个镜像
-        docker images $DOCKER_IMAGE_NAME \
-        --format "{{.ID}} {{.CreatedAt}}" \  # 输出镜像ID和创建时间
+        docker images --format "{{.ID}} {{.CreatedAt}}" $DOCKER_IMAGE_NAME \
           | sort -k2 -r \                      # 按时间倒序排序
           | awk -v keep=3 'NR>keep {print $3}' \
           | xargs -r docker rmi -f
