@@ -4,7 +4,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
 
-from app.api.endpoints import chat, search, document, auth,interview,knowledge_base
+from app.api.endpoints import chat, search, document, auth,interview,knowledge_base, conversation
 from app.config import Settings
 from app.db.milvus_client import milvus_client
 from app.db.neo4j_client import neo4j_client
@@ -36,6 +36,7 @@ def create_app():
     app.register_blueprint(auth.bp)
     app.register_blueprint(interview.interview_bp)
     app.register_blueprint(knowledge_base.bp)
+    app.register_blueprint(conversation.bp)
     milvus_client.connect(app)
     # neo4j_client.connect(app)
     CORS(app, supports_credentials=True)
