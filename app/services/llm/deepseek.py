@@ -25,6 +25,7 @@ class DeepseekService(LLMService):
     async def get_prompt(self, query: str, **kwargs):
         # 获取检索文档
         retrieved_docs = kwargs.get('retrieved_docs')
+
         context = "\n".join([doc["content"] for doc in retrieved_docs]) if retrieved_docs else None
 
         # 获取意图分类结果

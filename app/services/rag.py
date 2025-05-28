@@ -36,13 +36,11 @@ class RAGService:
         return retrieved_docs
 
     async def generate_answer(self, query: str, retrieved_docs: list):
-        # 1. 拼接检索到的文档片段
-        context = "\n".join([doc["content"] for doc in retrieved_docs])
+        # TODO: HMY
+        # 1. 构造提示
+        prompt = await self.llm_service.get_prompt(query, retrieved_docs=retrieved_docs)
 
-        # 2. 构造提示
-        prompt = await self.llm_service.get_prompt()
-
-        # 3. 使用 LLM 生成答案
+        # 2. 使用 LLM 生成答案
         answer = await self.llm_service.agenerate(prompt)
         return answer
 
