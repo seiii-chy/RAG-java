@@ -233,7 +233,7 @@ def get_interview(interview_id):
             "interview_id": interview.id,
             "user_id": interview.user_id,
             "position": interview.position,
-            "interview_name": interview.name,
+            "interview_name": interview.interview_name,
             "started_at": interview.started_at.isoformat(),
             "ended_at": interview.ended_at.isoformat() if interview.ended_at else None,
         }), HTTPStatus.OK
