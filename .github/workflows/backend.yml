@@ -8,30 +8,33 @@ on:
 
 env:
   # 云端Milvus配置（通过Secrets注入）
-  MILVUS_CLOUD_URI: ${{ secrets.MILVUS_URL}}  # 格式: https://xxx.api.milvus.cloud
+  MILVUS_CLOUD_URI: ${{ secrets.MILVUS_URL}}
   MILVUS_CLOUD_TOKEN: ${{ secrets.MILVUS_TOKEN }}
+  DOCKER_IMAGE_NAME: rag-java
+  DOCKER_CONTAINER_NAME: rag-java-container
+
 
 jobs:
   service-validation:
     runs-on: [self-hosted, nju]
 
     steps:
-    - name: Checkout code
+    - name: Checkout code via ssh
       uses: actions/checkout@v4
+      with:
+        repository: seiii-chy/RAG-java
+        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Set up Python 3.10
       uses: actions/setup-python@v4
       with:
         python-version: "3.10"
 
-    - name: Set up a Redis server
-      run: |
-        docker run -d --name redis-server -p 6379:6379 redis:latest
-        sleep 5
-
     - name: Create .env file
       run: |
         cat << EOF > .env
+        FLASK_APP = app/main.py:create_app()
+        FLASK_ENV = development
         DEEPSEEK_API_KEY = ${{secrets.DEEPSEEK_API_KEY}}
         DEEPSEEK_URL = ${{secrets.DEEPSEEK_URL}}
         MILVUS_HOST = ${{secrets.MILVUS_HOST}}
@@ -53,6 +56,9 @@ jobs:
         NEO4J_URI = ${{secrets.NEO4J_URI}}
         NEO4J_USERNAME = ${{secrets.NEO4J_USERNAME}}
         NEO4J_PASSWORD = ${{secrets.NEO4J_PASSWORD}}
+        AURA_INSTANCEID = ${{secrets.AURA_INSTANCEID}}
+        AURA_INSTANCENAME = ${{secrets.AURA_INSTANCENAME}}
+        REDIS_URL = ${{secrets.REDIS_URL}}
         EOF
 
     - name: Install dependencies
@@ -78,3 +84,48 @@ jobs:
     - name: Stop Flask app
       run: |
         kill $(cat flask.pid)
+
+    - name: Stop Docker container
+      run: |
+          docker stop $DOCKER_CONTAINER_NAME || true
+          docker rm $DOCKER_CONTAINER_NAME || true
+
+
+    - name: Clean up old images
+      run: |
+        # 保留最近1个镜像
+        if [ $(docker images -q $DOCKER_IMAGE_NAME | wc -l) -gt 1 ]; then
+          docker images --format "{{.ID}} {{.CreatedAt}}" $DOCKER_IMAGE_NAME \
+            | sort -k2,3 -r -t ' ' \
+            | awk -v keep=1 'NR>keep {print $1}' \
+            | xargs -r docker rmi -f
+        else
+          echo "无需清理：当前镜像数量 <= 1"
+        fi
+
+    - name: Build Docker image
+      run: |
+          docker build \
+          -t $DOCKER_IMAGE_NAME:${GITHUB_SHA::8} \
+          --build-arg ENV_FILE=.env \
+          .
+          
+          # docker builder prune --all --force
+        
+
+    - name: Deploy container
+      run: |
+          
+          docker run -d \
+            --name $DOCKER_CONTAINER_NAME \
+            --restart unless-stopped \
+            --health-cmd "curl --fail http://localhost:5000/health || exit 1" \
+            --health-interval 30s \
+            --health-timeout 10s \
+            --health-retries 3 \
+            -p 5000:5000 \
+            $DOCKER_IMAGE_NAME:${GITHUB_SHA::8}
+            
+            # 等待容器健康检查通过
+            timeout 120 bash -c 'until docker inspect --format "{{json .State.Health.Status }}" $DOCKER_CONTAINER_NAME | grep -q "healthy"; do sleep 5; done'
+
