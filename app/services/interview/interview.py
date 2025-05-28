@@ -75,7 +75,8 @@ class InterviewSession:
                             以下是几个提问示例：
                             “说一下Java的特点” ，“与传统的JDBC相比，MyBatis的优点？”，“介绍一下TCP三次握手的流程”
                             “你在简历里提到xxx（技术点），可以介绍一下关于xxx的ccc吗”
-                            请尽可能的模拟一个面试官的语气，在next_question字段中适当的带上对上个回答的评价与过渡语句
+                            请尽可能的模拟一个面试官的语气，在next_question字段中适当的带上对上个回答的评价与过渡语句,比如“上个问题你回答的……”
+                            evaluation字段中请给出对上个回答本身的评价，尽量客观
                             返回JSON格式：
                             {{{{"evaluation": "...","next_question": "...","need_followup": bool,"need_end": bool}}}}'''
                     ),
@@ -235,7 +236,7 @@ class InterviewSession:
             return ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo")
         elif provider == "deepseek":
             # 假设使用HuggingFace加载deepseek模型
-            return  ChatOpenAI(api_key=Settings.DEEPSEEK_API_KEY, base_url='https://api.deepseek.com/v1')
+            return  ChatOpenAI(api_key=Settings.DEEPSEEK_API_KEY, base_url='https://api.deepseek.com/v1',model_name='deepseek-chat')
         elif provider == "hunyuan":
             # 为Hunyuan模型创建合适的接口 (如果有特定API)
             # 这里使用ChatOpenAI作为占位符，实际应根据hunyuan API调整
@@ -269,7 +270,6 @@ class InterviewSession:
              },
             config={"configurable": {"session_id": self.session_id}}
         )
-
         result = self._parse_llm_response(llm_response)
         print("result:", result)
         # 存储问题
