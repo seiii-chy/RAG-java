@@ -9,9 +9,9 @@ class Conversation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     title = db.Column(db.String(200), nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(ZoneInfo('Asia/Shanghai')))
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now(ZoneInfo('Asia/Shanghai')), onupdate=datetime.now(ZoneInfo('Asia/Shanghai')))
-    messages = db.relationship('Message', backref='conversation', lazy='dynamic', order_by='Message.timestamp')
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda:datetime.now(ZoneInfo('Asia/Shanghai')))
+    updated_at = db.Column(db.DateTime, nullable=False,onupdate=lambda:datetime.now(ZoneInfo('Asia/Shanghai')),  default=lambda:datetime.now(ZoneInfo('Asia/Shanghai')))
+    messages = db.relationship('Message', backref='conversation', lazy='dynamic', order_by='Message.timestamp', cascade='all, delete-orphan',passive_deletes=True)
 
     def add_message(self, role, content):
         """添加消息并自动更新对话时间"""

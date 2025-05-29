@@ -21,9 +21,9 @@ async def get_conversations():
     if not conversations:
         return jsonify({"error": "No conversations found"}), 404
 
-    conversation_ids = [conv.id for conv in conversations]
+    conversation_lists = [{"id" : conv.id, "title": conv.title} for conv in conversations]
 
-    return jsonify({"conversation_ids": conversation_ids}), 200
+    return jsonify({"conversations": conversation_lists}), 200
 
 @bp.route('/get/<int:conversation_id>', methods=['GET'])
 async  def get_conversation(conversation_id):
@@ -85,5 +85,21 @@ async def add_conversation_message(conversation_id):
         return jsonify({"error": "Conversation not found"}), 404
 
     msg= conversation.add_message(role, content)
+    db.session.commit()
 
     return jsonify({"message": "Message added successfully", "message_id": msg.id}), 200
+
+
+@bp.route('/delete/<int:conversation_id>', methods=['DELETE'])
+async def delete_conversation(conversation_id):
+    """
+    删除指定对话
+    """
+    conversation = Conversation.query.get(conversation_id)
+    if not conversation:
+        return jsonify({"error": "Conversation not found"}), 404
+
+    db.session.delete(conversation)
+    db.session.commit()
+
+    return jsonify({"message": "Conversation deleted successfully"}), 200

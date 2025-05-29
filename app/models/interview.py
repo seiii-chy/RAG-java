@@ -10,7 +10,7 @@ class Interview(db.Model):
     id = Column(db.Integer, primary_key=True)
     user_id = Column(db.Integer, nullable=False)  # JWT中的用户ID
     position = Column(db.String(100))  # 新增面试岗位字段
-    started_at = Column(db.DateTime, default=datetime.now(ZoneInfo('Asia/Shanghai')))
+    started_at = Column(db.DateTime, default=lambda:datetime.now(ZoneInfo('Asia/Shanghai')))
     ended_at = Column(db.DateTime)
     final_score = Column(db.Integer)
     feedback = Column(db.String(1000))

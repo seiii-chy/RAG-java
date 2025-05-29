@@ -12,6 +12,6 @@ class InterviewQuestion(db.Model):
     stage = db.Column(db.String(50))  # 当前面试阶段
     is_followup = db.Column(db.Boolean)
     evaluation = db.Column(db.String(500))  # 该问题的评价
-    created_at = db.Column(db.DateTime, default=datetime.now(ZoneInfo('Asia/Shanghai')))
+    created_at = db.Column(db.DateTime, default=lambda:datetime.now(ZoneInfo('Asia/Shanghai')))
     order = db.Column(db.Integer)  # 问题顺序
     context = db.Column(db.JSON)  # 存储原始对话上下文
