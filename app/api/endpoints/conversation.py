@@ -21,9 +21,9 @@ async def get_conversations():
     if not conversations:
         return jsonify({"error": "No conversations found"}), 404
 
-    conversation_titles = [conv.title for conv in conversations]
+    conversation_lists = [{"id" : conv.id, "title": conv.title} for conv in conversations]
 
-    return jsonify({"conversation_ids": conversation_titles}), 200
+    return jsonify({"conversations": conversation_lists}), 200
 
 @bp.route('/get/<int:conversation_id>', methods=['GET'])
 async  def get_conversation(conversation_id):
