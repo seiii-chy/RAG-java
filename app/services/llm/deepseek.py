@@ -29,13 +29,26 @@ class DeepseekService(LLMService):
         context = "\n".join([doc["content"] for doc in retrieved_docs]) if retrieved_docs else None
 
         # 获取意图分类结果
+        print("---------llm is classifying intent--------")
         intent_classifier = IntentClassificationService()
         intent = await intent_classifier.classify_intent(query)
+        print(intent.value)
 
         # 根据意图类型获取对应的prompt模板并生成prompt
         prompt_template = get_prompt_template(intent.value)
         generated_prompt = prompt_template.generate(query, context if context else "")
         return str(generated_prompt)
+
+    async def simple_generate(self, prompt: str, **kwargs) -> str:
+        response = await self.client.chat.completions.create(
+            model='deepseek-chat',
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            temperature=kwargs.get('temperature', 0.5)
+        )
+        return response.choices[0].message.content
 
     @traceable
     async def agenerate(self, prompt: str, **kwargs) -> str:

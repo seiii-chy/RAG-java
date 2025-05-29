@@ -37,6 +37,18 @@ class hunyuanService(LLMService):
         generated_prompt = prompt_template.generate(query, context if context else "")
         return str(generated_prompt)
 
+    async def simple_generate(self, prompt: str, **kwargs) -> str:
+        print("---------llm is generating response--------")
+        response = await self.client.chat.completions.create(
+            model='hunyuan-lite',
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            temperature=kwargs.get('temperature', 0.5)
+        )
+        return response.choices[0].message.content
+
     @traceable
     async def agenerate(self, prompt: str, **kwargs) -> str:
         print("---------llm is generating response--------")

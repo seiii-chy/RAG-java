@@ -17,6 +17,9 @@ class LLMService(ABC):
     def generate(self, prompt: str, **kwargs) -> str:
         pass
 
+    async def simple_generate(self, prompt: str, **kwargs) -> str:
+        pass
+
     @abstractmethod
     async def agenerate(self, prompt: str, **kwargs) -> str:
         pass

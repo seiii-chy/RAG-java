@@ -1,14 +1,11 @@
 from enum import Enum
 
-from app.api.dependency import get_llm_service_dependency
-
-
 # 意图类型
 class InterviewIntent(Enum):
     TECHNICAL = "technical"                # 技术意图
     PROCESS = "process"                    # 流程意图
     INTERACTIVE = "interactive"            # 交互意图
-    ANALYTICAL = "analytical"              # 分析意图
+    ANALYSIS = "analysis"                  # 分析意图
     GENERAL = "general"                    # 通用意图
 
 # 意图详细说明
@@ -16,13 +13,15 @@ INTENT_DESCRIPTIONS = {
     InterviewIntent.TECHNICAL: "技术意图，包括代码技术、原理解释、性能优化、设计模式等。",
     InterviewIntent.PROCESS: "流程意图，包括面试步骤、时间安排、HR技巧等。",
     InterviewIntent.INTERACTIVE: "交互意图，包括追问、反馈、模拟对话。",
-    InterviewIntent.ANALYTICAL: "分析意图，包括技术对比、案例分析。",
+    InterviewIntent.ANALYSIS: "分析意图，包括技术对比、案例分析。",
     InterviewIntent.GENERAL: "通用意图，适用于无法明确分类的情况。"
 }
 
 # 意图分类服务
 class IntentClassificationService:
     def __init__(self, provider: str = 'deepseek'):
+        from app.api.dependency import get_llm_service_dependency
+
         self.llm_service = get_llm_service_dependency(provider)
     
     async def classify_intent(self, text: str) -> InterviewIntent:
@@ -31,10 +30,10 @@ class IntentClassificationService:
             - TECHNICAL（技术意图：包括代码技术、原理解释、性能优化、设计模式等）
             - PROCESS（流程意图：包括面试步骤、时间安排、HR技巧等）
             - INTERACTIVE（交互意图：包括追问、反馈、模拟对话等）
-            - ANALYTICAL（分析意图：包括技术对比、案例分析等）
+            - ANALYSIS（分析意图：包括技术对比(通常表现在“区别”“使用什么方案更好”等等)、案例分析等）
             你的回答应该只包含一个意图名称。"""
         
-        response = await self.llm_service.agenerate(prompt)
+        response = await self.llm_service.simple_generate(prompt)
         intent_str = response.strip().upper()
         
         # 使用文本相似度匹配意图
@@ -42,7 +41,7 @@ class IntentClassificationService:
             InterviewIntent.TECHNICAL: ["TECHNICAL", "技术", "代码", "原理", "优化", "设计模式"],
             InterviewIntent.PROCESS: ["PROCESS", "流程", "步骤", "时间安排", "HR技巧"],
             InterviewIntent.INTERACTIVE: ["INTERACTIVE", "交互", "追问", "反馈", "对话"],
-            InterviewIntent.ANALYTICAL: ["ANALYTICAL", "分析", "对比", "案例"]
+            InterviewIntent.ANALYSIS: ["ANALYSIS", "分析", "对比", "案例"]
         }
         
         # 计算匹配分数
@@ -63,8 +62,8 @@ class IntentClassificationService:
             return InterviewIntent.PROCESS
         elif "INTERACTIVE" in intent_str or "交互意图" in intent_str:
             return InterviewIntent.INTERACTIVE
-        elif "ANALYTICAL" in intent_str or "分析意图" in intent_str:
-            return InterviewIntent.ANALYTICAL
+        elif "ANALYSIS" in intent_str or "分析意图" in intent_str:
+            return InterviewIntent.ANALYSIS
         
         # 如果没有直接匹配，返回基于关键词的最佳匹配
         return best_intent

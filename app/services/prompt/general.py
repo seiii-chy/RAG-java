@@ -6,9 +6,9 @@ class GeneralPrompt(PromptTemplate):
         if not context:
             return query
         return f"""
-        根据以下上下文回答问题：
+        根据提供的技术文档回答问题：
         
-        上下文：
+        技术文档：
         {context}
         
         问题：
