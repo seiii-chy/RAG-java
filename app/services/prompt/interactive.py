@@ -1,5 +1,5 @@
 from app.services.prompt.template import PromptTemplate
-from app.models.conversation import Conversation
+from app.services.conversation.conversation import ConversationService
 
 # 交互类意图prompt模板
 class InteractivePrompt(PromptTemplate):
@@ -7,7 +7,7 @@ class InteractivePrompt(PromptTemplate):
         conversation_id = kwargs.get('conversation_id')
         conversation_history = None
         if conversation_id:
-            conversation = Conversation.query.get(conversation_id)
+            conversation = ConversationService.get_conversation(conversation_id)
             conversation_history = conversation.messages
 
         history_str = ""
