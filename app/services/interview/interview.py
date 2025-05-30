@@ -21,9 +21,6 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 
 
-
-
-
 class InterviewSession:
     def __init__(self, db_session,user_id: int,provider: str = "deepseek", position: str = "高级开发工程师",first: bool = True,interview_name:str = "模拟面试",cv:str = "java工程师应聘"):
         self._history_store = {}
