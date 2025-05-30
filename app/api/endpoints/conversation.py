@@ -56,7 +56,7 @@ async def create_conversation():
     3. 只生成一个标题，不需要其他内容。
     回答：
     """
-    title = await llm_service.agenerate(prompt)
+    title = await llm_service.simple_generate(prompt)
 
     if not user_id:
         return jsonify({"error": "User ID is required"}), 400
