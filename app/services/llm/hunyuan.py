@@ -8,7 +8,7 @@ from openai import AsyncOpenAI, OpenAI
 from app.config import Settings
 from app.services.llm import LLMService
 
-from app.services.intent_classifier import IntentClassificationService
+from app.utils.intent_classifier import IntentClassificationService
 from app.services.prompt.factory import get_prompt_template
 
 API_URL = 'https://api.hunyuan.cloud.tencent.com/v1'

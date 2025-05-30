@@ -6,8 +6,6 @@ from flask import current_app
 from app.api.dependency import get_llm_service_dependency
 from app.utils.tokenizer import Tokenizer
 
-from app.services.intent_classifier import IntentClassificationService
-
 
 class RAGService:
     def __init__(self, LLMrequire: str = 'deepseek'):
