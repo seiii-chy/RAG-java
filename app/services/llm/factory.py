@@ -9,10 +9,10 @@ LLM_PROVIDERS = {
     "deepseek": DeepseekService,
     "ollama": OllamaService,
     "hunyuan": hunyuanService
-
 }
 
-def get_llm_service(provider:str) -> LLMService:
+
+def get_llm_service(provider: str) -> LLMService:
     if provider not in LLM_PROVIDERS:
         raise ValueError(f"Invalid provider: {provider}")
     return LLM_PROVIDERS[provider]()

@@ -1,15 +1,15 @@
 import asyncio
-import os
-from typing import AsyncGenerator
 
 from langsmith.wrappers import wrap_openai
 from langsmith import traceable
-
 
 from openai import AsyncOpenAI, OpenAI
 
 from app.config import Settings
 from app.services.llm import LLMService
+
+from app.services.intent_classifier import IntentClassificationService
+from app.services.prompt.factory import get_prompt_template
 
 API_URL = 'https://api.hunyuan.cloud.tencent.com/v1'
 
@@ -23,23 +23,37 @@ class hunyuanService(LLMService):
         # 同步方法调用异步方法
         return asyncio.run(self.agenerate(prompt, **kwargs))
 
+    async def get_prompt(self, query: str, **kwargs):
+        # 获取检索文档
+        retrieved_docs = kwargs.get('retrieved_docs')
+        context = "\n".join([doc["content"] for doc in retrieved_docs]) if retrieved_docs else None
+
+        # 获取意图分类结果
+        intent_classifier = IntentClassificationService()
+        intent = await intent_classifier.classify_intent(query)
+
+        # 根据意图类型获取对应的prompt模板并生成prompt
+        prompt_template = get_prompt_template(intent.value)
+        generated_prompt = prompt_template.generate(query, context if context else "")
+        return str(generated_prompt)
+
+    async def simple_generate(self, prompt: str, **kwargs) -> str:
+        print("---------llm is generating response--------")
+        response = await self.client.chat.completions.create(
+            model='hunyuan-lite',
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }],
+            temperature=kwargs.get('temperature', 0.5)
+        )
+        return response.choices[0].message.content
+
     @traceable
     async def agenerate(self, prompt: str, **kwargs) -> str:
         print("---------llm is generating response--------")
-        retrieved_docs = kwargs.get('retrieved_docs')
         # 关于prompt的处理
-        if retrieved_docs:
-            context = "\n".join([doc["content"] for doc in retrieved_docs])
-            prompt = f"""
-            根据以下上下文回答问题：
-            上下文：
-            {context}
-
-            问题：
-            {prompt}
-
-            回答：
-            """
+        prompt = await self.get_prompt(query=prompt, **kwargs)
         response = await self.client.chat.completions.create(
             model = 'hunyuan-lite',
             messages=[{
@@ -50,28 +64,16 @@ class hunyuanService(LLMService):
         )
         return response.choices[0].message.content
 
-    def stream_generate(self, prompt: str, **kwargs):
+    async def stream_generate(self, prompt: str, **kwargs):
         """
         流式生成响应，逐步返回每个 token。
         :param prompt: 用户输入的提示
         :param kwargs: 其他参数（如 temperature）
         """
         print("---------llm is streaming response--------")
-        retrieved_docs = kwargs.get('retrieved_docs')
+        client = wrap_openai(OpenAI(base_url=API_URL, api_key=self.api_key))
         # 关于prompt的处理
-        if retrieved_docs:
-            context = "\n".join([doc["content"] for doc in retrieved_docs])
-            prompt = f"""
-            根据以下上下文回答问题：
-            上下文：
-            {context}
-
-            问题：
-            {prompt}
-
-            回答：
-            """
-        client = wrap_openai(OpenAI(base_url=API_URL,api_key=self.api_key))
+        prompt = await self.get_prompt(query=prompt, **kwargs)
         stream = client.chat.completions.create(
             model='hunyuan-lite',
             messages=[{"role": "user", "content": prompt}],

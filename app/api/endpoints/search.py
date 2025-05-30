@@ -1,5 +1,3 @@
-import asyncio
-
 from flask import Blueprint, request, jsonify, Response
 
 from app.services.rag import RAGService
@@ -14,10 +12,6 @@ async def search():
         query = data.get("query")
         top_k = data.get("top_k", 5)
         model = data.get("model","hunyuan")# 默认检索前 5 条结果
-
-        # query = Processor.process_query(query)
-        # TODO: 通过优化query提升提问效果
-        # blame： HMY
 
         if not query:
             return jsonify({"error": "Missing 'query' in request body"}), 400
@@ -84,10 +78,31 @@ def stream_output():
     rag_service = RAGService(LLMrequire=model)
     print("service:",rag_service)
     # 定义生成器函数
+    # def generate():
+    #     try:
+    #         # 流式输出文档和生成内容
+    #         import asyncio
+    #         async def _generate_async():
+    #             async for packet in rag_service.stream_output(query, top_k=top_k):
+    #                 yield packet
+    #         for packet in asyncio.run(_generate_async()):
+    #             yield f"data: {packet}\n\n"
+    #         yield "data: [END]\n\n"
+    #     except Exception as e:
+    #         print(f"Error during streaming: {e}")
+    #         yield "data: [ERROR]\n\n"
+
     def generate():
         try:
             # 流式输出文档和生成内容
-            for packet in rag_service.stream_output(query, top_k=top_k):
+            import asyncio
+            async def _collect_async_results():
+                results = []
+                async for packet in rag_service.stream_output(query, top_k=top_k):
+                    results.append(packet)
+                return results
+
+            for packet in asyncio.run(_collect_async_results()):
                 yield f"data: {packet}\n\n"
             yield "data: [END]\n\n"
         except Exception as e:
