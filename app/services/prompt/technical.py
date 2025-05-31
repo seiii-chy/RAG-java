@@ -2,7 +2,7 @@ from app.services.prompt.template import PromptTemplate
 
 # 技术类意图prompt模板
 class TechnicalPrompt(PromptTemplate):
-    def generate(self, query: str, context: str = None) -> str:
+    def generate(self, query: str, context: str = None, **kwargs) -> str:
         if not context:
             return query
         return f"""

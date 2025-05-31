@@ -8,7 +8,7 @@ from openai import AsyncOpenAI, OpenAI
 from app.config import Settings
 from app.services.llm import LLMService
 
-from app.services.intent_classifier import IntentClassificationService
+from app.utils.intent_classifier import IntentClassificationService
 from app.services.prompt.factory import get_prompt_template
 
 API_URL = 'https://api.hunyuan.cloud.tencent.com/v1'
@@ -26,6 +26,7 @@ class hunyuanService(LLMService):
     async def get_prompt(self, query: str, **kwargs):
         # 获取检索文档
         retrieved_docs = kwargs.get('retrieved_docs')
+        conversation_id = kwargs.get('conversation_id')
         context = "\n".join([doc["content"] for doc in retrieved_docs]) if retrieved_docs else None
 
         # 获取意图分类结果
@@ -34,7 +35,7 @@ class hunyuanService(LLMService):
 
         # 根据意图类型获取对应的prompt模板并生成prompt
         prompt_template = get_prompt_template(intent.value)
-        generated_prompt = prompt_template.generate(query, context if context else "")
+        generated_prompt = prompt_template.generate(query, context if context else "", conversation_id=conversation_id)
         return str(generated_prompt)
 
     async def simple_generate(self, prompt: str, **kwargs) -> str:

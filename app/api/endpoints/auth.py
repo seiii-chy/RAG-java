@@ -1,6 +1,6 @@
 from flask import  Blueprint, request, g
 
-from app.services.auth_service import register_user, login_user, get_user_info
+from app.services.auth.auth_service import register_user, login_user, get_user_info
 from app.utils.tokenUtils import token_required
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
