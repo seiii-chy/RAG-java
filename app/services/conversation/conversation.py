@@ -1,5 +1,4 @@
 from app.models.conversation import Conversation
-from app.services.llm.factory import get_llm_service
 from app.extensions import db
 
 class ConversationService:
@@ -18,6 +17,7 @@ class ConversationService:
 
     @staticmethod
     async def create_conversation(user_id, content):
+        from app.services.llm.factory import get_llm_service
         llm_service = get_llm_service('deepseek')
         prompt = f"""
         根据以下上下文和限制生成一个对话标题：
