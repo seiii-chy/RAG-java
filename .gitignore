@@ -11,3 +11,7 @@ data/source
 venv/
 **/__pycache__/
 .vscode/
+model.pth
+bert-chinese
+bert-base-chinese.zip
+bert-base-chinese
