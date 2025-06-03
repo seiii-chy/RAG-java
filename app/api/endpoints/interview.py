@@ -259,15 +259,22 @@ def get_interview_questions(interview_id):
         print(questions)
         question_list = []
         for interview_q, question, answer in questions:
-            question_list.append({
-                "interview_question_id": interview_q.id,
-                "question_id": question.id,
-                "question_text": question.text,
-                "answer_text": answer.text if answer else None,
-                "evaluation": interview_q.evaluation,
-                "stage": interview_q.stage,
-            })
-
+            if interview_q.interview_id == interview_id:
+                question_list.append({
+                    "interview_question_id": interview_q.id,
+                    "question_id": question.id,
+                    "question_text": question.text,
+                    "answer_text": answer.text if answer else None,
+                    "evaluation": interview_q.evaluation,
+                    "stage": interview_q.stage,
+                })
+        #加上本次面试评价
+        interview = db.session.get(Interview, interview_id)
+        question_list.append({
+            "interview_id": interview.id,
+            "final_score": interview.final_score,
+            "feedback": interview.feedback
+        })
         return jsonify(question_list), HTTPStatus.OK
     except Exception as e:
         db.session.rollback()
