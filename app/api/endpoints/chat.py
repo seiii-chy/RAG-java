@@ -8,6 +8,7 @@ from flask import request, jsonify, Blueprint
 
 from app.api.dependency import get_llm_service_dependency
 from app.db.voice_to_oss import Voice_to_oss
+from app.utils.intent_classifier_bert import IntentClassificationService
 from app.utils.record_trans import Transvoice, save_temp_file, allowed_file
 
 bp = Blueprint('chat', __name__)
@@ -25,6 +26,18 @@ async def chat():
 
     return jsonify({'result': result,
                     'provider': provider})
+
+@bp.route('/classify', methods=['POST'])
+async def classify():
+    import app.utils.intent_classifier_bert
+    text = request.args.get('text', 'no text')
+
+    service = IntentClassificationService()
+
+    result = await service.classify_intent(text)
+    print(result)
+
+    return jsonify({'result': result.value})
 
 @bp.route('/voice_to_text',methods = ['POST'])
 def speech_to_text():
