@@ -18,9 +18,8 @@ async def upload_file():
         return jsonify({'error': 'No file part'}), 400
 
     files = request.files.getlist('files')
-    data = request.get_json()
-    collection_name = data.get('collection_name', 'java_doc_plus')
-    category = data.get('category', 'Java开发')
+    collection_name = request.form.get('collection_name', 'java_doc_plus')
+    category = request.form.get('category', 'Java开发')
     milvus_client = current_app.extensions['milvus']
     if milvus_client.collection_name != collection_name:
         milvus_client.change_collection(collection_name)
@@ -35,11 +34,9 @@ async def list_files():
     return {"files": files}, 200
 
 
-@bp.route('/get_file', methods=['GET'])
+@bp.route('/get_file/<category>', methods=['GET'])
 @token_required
-async def get_file():
-    data = request.get_json()
-    category = data.get('category', 'Java开发')
+async def get_file(category):
     files = get_files(category)
 
     return {"files": files}, 200
