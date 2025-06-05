@@ -53,7 +53,7 @@ def start_interview():
             "interview_id": interview_session.interview.id,
             "first_question": initial_question,
             "start_time": interview_session.interview.started_at.isoformat()
-        }), HTTPStatus.CREATED
+        }), HTTPStatus.OK
 
     except Exception as e:
         db.session.rollback()
