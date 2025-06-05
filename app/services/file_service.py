@@ -2,9 +2,10 @@ from flask import jsonify, current_app
 import os
 import unicodedata
 import re
+from app.models.file import File
+from app.extensions import db
 
-
-MAX_FILE_SIZE = 20 * 1024 * 1024 # 单个文件最大20MB
+MAX_FILE_SIZE = 50 * 1024 * 1024 # 单个文件最大20MB
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'md'} # 允许的文件类型
 
 
@@ -31,7 +32,7 @@ def safe_filename(filename: str) -> str:
     # 5. 长度限制（保留最后255字符）
     return cleaned[:255]
 
-def store_file(files):
+def store_file(files, user_id=0, file_category=None):
     doc_to_oss = current_app.extensions['oss']
     processed_pipeline = current_app.extensions['pipeline']
     saved_files = []
@@ -55,6 +56,16 @@ def store_file(files):
         saved_files.append(file_name)
         # 处理文件
         file.seek(0)
-        processed_pipeline.process_document(file.stream, file_name)
+        processed_pipeline.process_document(file.stream, file_name, user_id)
+        # 保存文件信息到数据库
+        new_file = File(name=file_name, category=file_category, collection_name=current_app.extensions['milvus'].collection_name)
+        db.session.add(new_file)
+        db.session.commit()
 
     return jsonify({'success': True, 'saved_files': saved_files}), 200
+
+
+def get_files(file_category):
+    files = File.query.filter(File.category == file_category).all()
+    file_lists = [{"file_name": file.name} for file in files]
+    return file_lists
