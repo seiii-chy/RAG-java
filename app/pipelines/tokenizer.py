@@ -91,6 +91,14 @@ class ChineseTokenizer:
             allowPOS=('n', 'vn', 'ns', 'eng')
         )
 
+    def extract_keywords_without_weight(self, text, top_k=10):
+        return jieba.analyse.extract_tags(
+            text,
+            topK=top_k,
+            withWeight=False,
+            allowPOS=('n', 'vn', 'ns', 'eng')
+        )
+
     def named_entity_recognition(self, text):
         """命名实体识别"""
         # 使用jieba的词性标注来识别命名实体

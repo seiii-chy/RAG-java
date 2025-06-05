@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, request, jsonify, Response, current_app
 
 from app.services.rag import RAGService
 
@@ -11,7 +11,7 @@ async def search():
         data = request.get_json()
         query = data.get("query")
         top_k = data.get("top_k", 5)
-        model = data.get("model","hunyuan")# 默认检索前 5 条结果
+        model = data.get("model", "hunyuan")# 默认检索前 5 条结果
 
         if not query:
             return jsonify({"error": "Missing 'query' in request body"}), 400
@@ -36,21 +36,23 @@ async def search():
 @bp.route('/hybrid_search', methods=['POST'])
 async def hybrid_search():
     try:
-        # TODO: 更新完数据库的结构后使用真正的混合检索
-        # blame: LHY
         # 1. 解析请求数据
         data = request.get_json()
         query = data.get("query")
         top_k = data.get("top_k", 5)  # 默认检索前 5 条结果
+        model = data.get("model", "hunyuan")
 
         if not query:
             return jsonify({"error": "Missing 'query' in request body"}), 400
 
+        if model not in ["hunyuan", "deepseek"]:
+            model = "hunyuan"
+
         # 2. 初始化 RAG 服务
-        rag_service = RAGService(LLMrequire='deepseek')
+        rag_service = RAGService(LLMrequire=model)
 
         # 3. 执行 RAG 查询
-        result = await rag_service.query(query, top_k=top_k)
+        result = await rag_service.hybrid_search(query, top_k=top_k)
 
         # 4. 构造响应
         return jsonify({
@@ -69,6 +71,10 @@ def stream_output():
     query = data.get("query")
     top_k = data.get("top_k", 5)# 默认检索前 5 条结果
     model = data.get("model","hunyuan")
+    collection_name = data.get("collection_name", "java_doc_plus")
+    milvus_client = current_app.extensions['milvus']
+    if milvus_client.collection_name != collection_name:
+        milvus_client.change_collection(collection_name)
     print("query:",query)
     if not query:
         return jsonify({"error": "Missing 'query' in request body"}), 400

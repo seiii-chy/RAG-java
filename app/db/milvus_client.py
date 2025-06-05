@@ -41,24 +41,42 @@ class MilvusClient:
         print(f"query_vector embedding done")
         results = self.collection.search(
             data=[query_vector],
-            anns_field="embedding",
+            anns_field="chunk_embedding",
             param=search_params,
             limit=top_k,
             output_fields=["content","file_name"],
         )
         return results
 
-    def hybrid_search(self,query_vector,keywords, top_k=5):
+    def hybrid_search(self,query_vector, expr, top_k=5):
         search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
-        print(f"query_vector: {query_vector}")
         results = self.collection.search(
             data=[query_vector],
-            anns_field="embedding",
+            anns_field="chunk_embedding",
             param=search_params,
             limit=top_k,
-            output_fields=["content","file_name"],
-            expr=f"keywords in {keywords}"
+            output_fields=["content","keywords","file_name", "belong_to"],
+            expr=expr
         )
         return results
 
-milvus_client = MilvusClient(collection_name="java_docs",dim=512)
+    def change_collection(self, collection_name):
+        """切换集合"""
+        if utility.has_collection(collection_name):
+            self.collection_name = collection_name
+            self.collection = Collection(self.collection_name)
+            self.collection.load()
+            print(f"ℹ️ 切换到集合 {self.collection_name} 成功")
+        else:
+            print(f"❗集合 {collection_name} 不存在")
+
+    def delete_by_file_name(self, file_name: str):
+        """根据文件名删除数据"""
+        if not utility.has_collection(self.collection_name):
+            print(f"❗集合 {self.collection_name} 不存在")
+            return
+        expr = f"file_name == '{file_name}'"
+        self.collection.delete(expr)
+        self.collection.flush()
+        print(f"ℹ️ 已删除文件名为 {file_name} 的数据")
+

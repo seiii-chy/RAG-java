@@ -1,7 +1,7 @@
 from typing import List, Dict
 
 from sentence_transformers import SentenceTransformer
-from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility, MilvusException
+from pymilvus import connections,  Collection, utility, MilvusException
 
 from app.models.document import DocumentModel
 
@@ -23,7 +23,7 @@ class VectorDB:
     def __init__(self, milvus_uri, token,dim=512):
         self.milvus_uri = milvus_uri
         self.token = token
-        self.collection_name = "java_docs"
+        self.collection_name = "java_doc_plus"
         self.dim = dim
 
         # 连接Milvus
@@ -54,7 +54,7 @@ class VectorDB:
                     "params": {"nlist": 128}
                 }
                 collection.create_index(
-                    field_name="embedding",
+                    field_name="chunk_embedding",
                     index_params=index_params
                 )
                 print(f"集合 {self.collection_name} 创建成功")
@@ -71,7 +71,10 @@ class VectorDB:
                 "file_name": doc["file_name"],
                 "chunk_index": doc["chunk_index"],
                 "keywords": ",".join([kw[0] for kw in doc["keywords"]]),  # 将列表转为字符串
-                "embedding": doc["vector"]
+                "chunk_embedding": doc["chunk_vector"],
+                # "summary_embedding": doc["summary_vector"],
+                # "summary": doc["summary"],
+                "belong_to": doc["user_id"]
             }
             data.append(entity)
 

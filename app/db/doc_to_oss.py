@@ -52,6 +52,19 @@ class DocToOSS:
             files.append(obj.key)
         return files
 
+    def delete_file(self, file_name):
+        auth = oss2.Auth(self.ACCESS_KEY_ID, self.ACCESS_KEY_SECRET)
+        bucket = oss2.Bucket(auth, self.ENDPOINT_URL, self.bucket_name)
+
+        try:
+            if not bucket.object_exists(file_name):
+                return "文件不存在"
+
+            bucket.delete_object(file_name)
+            return None
+        except Exception as e:
+            return "服务器内部错误"
+
 if __name__ == '__main__':
     doc_to_oss = DocToOSS()
     url = doc_to_oss.get_file('ComputerArchitecture.pdf')

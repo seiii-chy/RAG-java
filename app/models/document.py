@@ -19,7 +19,7 @@ class DocumentModel:
             "auto_id": True
         },
         {
-            "name": "embedding",
+            "name": "chunk_embedding",
             "dtype": DataType.FLOAT_VECTOR,
             "dim": 512  # 根据实际模型维度调整
         },
@@ -41,6 +41,10 @@ class DocumentModel:
             "name": "keywords",
             "dtype": DataType.VARCHAR,
             "max_length": 10000  # 逗号分隔的关键词
+        },
+        {
+            "name": "belong_to",
+            "dtype": DataType.INT32 #
         }
     ]
 
