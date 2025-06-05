@@ -53,6 +53,33 @@ async def send_file():
     return jsonify({'msg': 'File uploaded successfully', 'id': new_file.id}), 200
 
 
+@bp.route('/delete_file/<file_name>', methods=['DELETE'])
+@token_required
+async def delete_file(file_name):
+    user = g.user
+    if user.user_type != 'Administrator':
+        return jsonify({'error': 'You are not authorized'}), 401
+
+    # 删除文件
+    oss_client.delete_file(file_name)
+
+    # 从数据库中删除文件记录
+    file_record = File.query.filter_by(name=file_name).first()
+    collection_name = file_record.collection_name
+    if file_record:
+        db.session.delete(file_record)
+        db.session.commit()
+
+    # 从 Milvus 中删除文件相关的向量
+    milvus_client = current_app.extensions['milvus']
+    if milvus_client.collection_name != collection_name:
+        milvus_client.change_collection(collection_name)
+
+    milvus_client.delete_by_file_name(file_name)
+
+    return jsonify({'msg': 'File deleted successfully'}), 200
+
+
 
 
 

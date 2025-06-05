@@ -70,3 +70,13 @@ class MilvusClient:
         else:
             print(f"❗集合 {collection_name} 不存在")
 
+    def delete_by_file_name(self, file_name: str):
+        """根据文件名删除数据"""
+        if not utility.has_collection(self.collection_name):
+            print(f"❗集合 {self.collection_name} 不存在")
+            return
+        expr = f"file_name == '{file_name}'"
+        self.collection.delete(expr)
+        self.collection.flush()
+        print(f"ℹ️ 已删除文件名为 {file_name} 的数据")
+

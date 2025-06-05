@@ -58,7 +58,7 @@ def store_file(files, user_id=0, file_category=None):
         file.seek(0)
         processed_pipeline.process_document(file.stream, file_name, user_id)
         # 保存文件信息到数据库
-        new_file = File(name=file_name, category=file_category)
+        new_file = File(name=file_name, category=file_category, collection_name=current_app.extensions['milvus'].collection_name)
         db.session.add(new_file)
         db.session.commit()
 
