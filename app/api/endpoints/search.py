@@ -84,22 +84,67 @@ def stream_output():
     rag_service = RAGService(LLMrequire=model)
     print("service:",rag_service)
 
-    def generate():
-        try:
-            # 流式输出文档和生成内容
-            import asyncio
-            async def _collect_async_results():
-                results = []
-                async for packet in rag_service.stream_output(query, top_k=top_k):
-                    results.append(packet)
-                return results
+    # def generate():
+    #     try:
+    #         # 流式输出文档和生成内容
+    #         import asyncio
+    #         async def _collect_async_results():
+    #             results = []
+    #             async for packet in rag_service.stream_output(query, top_k=top_k):
+    #                 results.append(packet)
+    #             return results
+    #
+    #         for packet in asyncio.run(_collect_async_results()):
+    #             yield f"data: {packet}\n\n"
+    #         yield "data: [END]\n\n"
+    #     except Exception as e:
+    #         print(f"Error during streaming: {e}")
+    #         yield "data: [ERROR]\n\n"
+    # 创建线程安全的队列
+    import asyncio, threading
+    data_queue = asyncio.Queue()
+    loop = asyncio.new_event_loop()
 
-            for packet in asyncio.run(_collect_async_results()):
-                yield f"data: {packet}\n\n"
-            yield "data: [END]\n\n"
+    async def async_generator():
+        """真正的异步生成器协程"""
+        try:
+            async for packet in rag_service.stream_output(query, top_k=top_k):
+                # 将数据放入队列
+                await data_queue.put(packet)
+            await data_queue.put("[END]")
         except Exception as e:
-            print(f"Error during streaming: {e}")
+            print(f"Error during async streaming: {e}")
+            await data_queue.put("[ERROR]")
+
+    def run_async_task():
+        """在单独线程中运行异步任务"""
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(async_generator())
+
+    # 启动异步任务线程
+    threading.Thread(target=run_async_task, daemon=True).start()
+
+    def generate():
+        """同步生成器，从队列获取数据"""
+        try:
+            while True:
+                # 同步等待队列数据
+                packet = asyncio.run_coroutine_threadsafe(data_queue.get(), loop).result()
+
+                if packet == "[END]":
+                    yield "data: [END]\n\n"
+                    break
+                elif packet == "[ERROR]":
+                    yield "data: [ERROR]\n\n"
+                    break
+                else:
+                    yield f"data: {packet}\n\n"
+        except Exception as e:
+            print(f"Error in synchronous generator: {e}")
             yield "data: [ERROR]\n\n"
+        finally:
+            # 清理事件循环
+            loop.call_soon_threadsafe(loop.stop)
 
     return Response(
         generate(),
